@@ -11,7 +11,7 @@ O Terraform cria, em `us-east-1`:
 - `sg-alb`: HTTP `80` publico.
 - `sg-metabase`: HTTP `3000` somente do `sg-alb` e SSH `22` somente do seu IP.
 - `sg-rds`: PostgreSQL `5432` somente do `sg-metabase`.
-- RDS PostgreSQL `lab-metabase-db`, privado, `db.t4g.micro`, 20 GB, banco inicial `metabase`.
+- RDS PostgreSQL `lab-metabase-db`, privado, `db.t3.micro`, 20 GB, banco inicial `metabase`.
 - EC2 `ec2-metabase`, Amazon Linux 2023 ARM64, `t4g.small`, Docker e Compose.
 - ALB `alb-metabase`, target group `tg-metabase`, health check `/api/health`.
 - Metabase `metabase/metabase:v0.63.19.1` com estado no RDS.
@@ -23,6 +23,8 @@ Arquivos do lab mantidos em `docs/files/`:
 - `docs/files/seed-loja.sql`: seed usado automaticamente pela EC2.
 
 Observacao: o AWS provider nao aceita nomes reais de security group iniciando com `sg-`. Por isso os nomes AWS sao `lab-metabase-alb`, `lab-metabase-ec2` e `lab-metabase-rds`, mantendo as tags `Name` exatamente como no PDF.
+
+Observacao: o PDF usa `db.t4g.micro` e aceita `db.t3.micro` como alternativa. O default deste projeto usa `db.t3.micro` porque a criacao com `db.t4g.micro` falhou por falta de capacidade temporaria na AWS em `us-east-1`.
 
 Tags padrao aplicadas pelo provider AWS:
 
