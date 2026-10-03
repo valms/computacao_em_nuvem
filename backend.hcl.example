@@ -1,0 +1,5 @@
+bucket       = "unifor-metabase-tfstate-CHANGE_ME"
+key          = "computacao-em-nuvem/metabase-lab/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true

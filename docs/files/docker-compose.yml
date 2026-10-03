@@ -1,0 +1,54 @@
+# Laboratório 04/10 - Metabase na EC2 usando o RDS PostgreSQL (free tier) como banco
+# Uso:
+#   1) cp .env.example .env   e preencha com os dados do SEU RDS
+#   2) docker compose --profile seed run --rm seed   (uma vez: cria o banco "loja" com dados de exemplo)
+#   3) docker compose up -d
+#   4) acesse pelo DNS do Load Balancer (porta 80) ou http://<ip-da-ec2>:3000 para teste
+
+services:
+  metabase:
+    image: metabase/metabase:v0.63.19.1
+    container_name: metabase
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Banco interno do Metabase (usuarios, perguntas, dashboards) fica no RDS
+      MB_DB_TYPE: postgres
+      MB_DB_CONNECTION_URI: "postgres://${DB_HOST}:5432/${DB_NAME}?sslmode=require"
+      MB_DB_USER: ${DB_USER}
+      MB_DB_PASS: ${DB_PASSWORD}
+      # Memoria da JVM: cabe numa instancia de 2 GiB (t4g.small / t3.small)
+      JAVA_OPTS: "-Xmx1g"
+      JAVA_TIMEZONE: America/Fortaleza
+      MB_SITE_URL: ${SITE_URL:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+
+  # Servico de uso unico: cria os bancos "metabase" e "loja" e carrega dados de exemplo
+  seed:
+    image: postgres:17-alpine
+    profiles: ["seed"]
+    environment:
+      PGHOST: ${DB_HOST}
+      PGUSER: ${DB_USER}
+      PGPASSWORD: ${DB_PASSWORD}
+      PGSSLMODE: require
+      APP_DB: ${DB_NAME}
+      LEITURA_PASSWORD: ${LEITURA_PASSWORD}
+    volumes:
+      - ./seed-loja.sql:/seed/seed-loja.sql:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        psql -d postgres -v ON_ERROR_STOP=1 -tc "SELECT 1 FROM pg_database WHERE datname='$$APP_DB'" | grep -q 1 \
+          || psql -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$$APP_DB\""
+        psql -d postgres -v ON_ERROR_STOP=1 -tc "SELECT 1 FROM pg_database WHERE datname='loja'" | grep -q 1 \
+          || psql -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE loja"
+        psql -d loja -v ON_ERROR_STOP=1 -v leitura_pw="$$LEITURA_PASSWORD" -f /seed/seed-loja.sql
+        echo "Seed concluido: bancos '$$APP_DB' e 'loja' prontos."

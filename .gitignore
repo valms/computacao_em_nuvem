@@ -13,6 +13,8 @@ plan.out
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+backend.hcl
+*.tfbackend
 
 # Crash logs and override files
 crash.log
@@ -25,6 +27,7 @@ override.tf.json
 # Local CLI config
 .terraformrc
 terraform.rc
+.terraform.lock.hcl.backup
 
 # Editor and OS files
 .idea/
